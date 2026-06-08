@@ -1,0 +1,282 @@
+:root {
+  color-scheme: light;
+  --bg: #eef3f8;
+  --card: rgba(255, 255, 255, 0.92);
+  --text: #102033;
+  --muted: #617089;
+  --primary: #0f766e;
+  --primary-dark: #0b5953;
+  --border: #d9e2ec;
+  --danger: #b42318;
+  --ok: #067647;
+  --shadow: 0 20px 60px rgba(16, 32, 51, 0.12);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.20), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.16), transparent 36rem),
+    var(--bg);
+}
+
+.shell {
+  width: min(1480px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 440px);
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--primary);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 5.2rem);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.subtitle {
+  max-width: 760px;
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 1.12rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.upload-card {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+input, select, button {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 13px 14px;
+  font: inherit;
+  background: white;
+  color: var(--text);
+}
+
+input:disabled, select:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  background: #f3f6f9;
+}
+
+.rate-mode {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rate-mode legend {
+  margin-bottom: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: white;
+  color: var(--text);
+  font-weight: 750;
+}
+
+.radio-option input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--primary), #14b8a6);
+  color: white;
+  font-weight: 850;
+  box-shadow: 0 14px 28px rgba(15, 118, 110, 0.24);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.status {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.status.error { color: var(--danger); }
+.status.ok { color: var(--ok); }
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric {
+  padding: 20px 22px;
+}
+
+.metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.metric strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.7rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(330px, 0.75fr);
+  gap: 24px;
+}
+
+.plot-card, .diagnosis-card {
+  min-height: 660px;
+  padding: 22px;
+}
+
+.plot-card {
+  min-height: 1120px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.card-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.plot {
+  width: 100%;
+  height: 1040px;
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 20px;
+}
+
+.diagnoses {
+  display: grid;
+  gap: 12px;
+  max-height: 590px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.diagnosis {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: white;
+}
+
+.diagnosis.detected {
+  border-color: rgba(6, 118, 71, 0.35);
+  background: #ecfdf3;
+}
+
+.diagnosis-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 850;
+}
+
+.diagnosis-name {
+  margin: 6px 0 10px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.bar {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6edf4;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), #38bdf8);
+}
+
+.hidden { display: none; }
+
+@media (max-width: 980px) {
+  .hero, .grid, .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .plot-card, .diagnosis-card {
+    min-height: auto;
+  }
+}
