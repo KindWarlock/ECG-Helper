@@ -1,0 +1,38 @@
+# Core scientific stack
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib
+seaborn
+tqdm
+
+# ECG data I/O
+wfdb
+
+# ECG web service
+fastapi
+uvicorn
+python-multipart
+
+# PyTorch modeling and visualization
+torch
+torchinfo
+torchview
+
+# Multilabel stratified train/validation/test split
+iterative-stratification
+
+# Mamba classifier dependencies
+einops
+causal-conv1d
+transformers
+packaging
+ninja
+triton
+
+# Local Mamba source tree used by `from mamba_ssm import Mamba2`
+-e ./vendor/mamba
+
+# Notebook execution
+ipykernel
