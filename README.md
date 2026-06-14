@@ -47,7 +47,7 @@ pip install -r requirements.txt
 `requirements.txt` installs the local Mamba source tree with:
 
 ```text
--e ./mamba
+-e .vendor/mamba
 ```
 
 For GPU training or inference, install a PyTorch build that matches the local CUDA environment if the default package is not suitable.
