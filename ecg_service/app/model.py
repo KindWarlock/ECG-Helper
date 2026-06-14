@@ -7,8 +7,11 @@ import torch
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 MAMBA_DIR = ROOT_DIR / "mamba"
-if str(MAMBA_DIR) not in sys.path:
-    sys.path.insert(0, str(MAMBA_DIR))
+EXTERNAL_MAMBA_DIR = ROOT_DIR.parent / "ecg" / "vendor" / "mamba"
+
+for candidate in (MAMBA_DIR, EXTERNAL_MAMBA_DIR):
+    if candidate.exists() and str(candidate) not in sys.path:
+        sys.path.insert(0, str(candidate))
 
 from mamba_ssm import Mamba2  # noqa: E402
 

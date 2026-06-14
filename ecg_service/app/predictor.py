@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+import re
 from typing import Any
 
 import numpy as np
@@ -13,12 +14,32 @@ from scipy.signal import resample_poly
 
 from .model import MambaECGClassifier
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-MODEL_PATH = ROOT_DIR / "models" / "classifier_aug_128.pth"
-CONDITIONS_PATH = ROOT_DIR / "physionet.org" / "files" / "ecg-arrhythmia" / "ConditionNames_SNOMED-CT.csv"
+ROOT_DIR = Path(__file__).resolve().parents[1]
+MODEL_PATH = ROOT_DIR.resolve().parent / "models" / "classifier_aug_128.pth"
+CONDITIONS_PATH = ROOT_DIR / "db/ConditionNames_SNOMED-CT.csv"
 TARGET_FS = 500
 TARGET_LENGTH = 5000
 LEAD_NAMES = ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
+DEFAULT_ADC_GAIN_PER_MV = 200.0
+WFDB_NUMBER_PATTERN = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
+WFDB_INTEGER_PATTERN = r"[-+]?\d+"
+WFDB_GAIN_FIELD_RE = re.compile(
+    rf"^(?P<gain>{WFDB_NUMBER_PATTERN})?"
+    rf"(?:\((?P<baseline>[-+]?\d+)\))?"
+    rf"(?:/(?P<unit>[^\s/()]+))?$"
+)
+WFDB_SIGNAL_LINE_RE = re.compile(
+    rf"^(?P<file>\S+)\s+"
+    rf"(?P<format>\S+)"
+    rf"(?:\s+(?P<gain_field>\S+)"
+    rf"(?:\s+(?P<adc_resolution>{WFDB_INTEGER_PATTERN})"
+    rf"(?:\s+(?P<adc_zero>{WFDB_INTEGER_PATTERN})"
+    rf"(?:\s+(?P<initial_value>{WFDB_INTEGER_PATTERN})"
+    rf"(?:\s+(?P<checksum>{WFDB_INTEGER_PATTERN})"
+    rf"(?:\s+(?P<block_size>{WFDB_INTEGER_PATTERN})"
+    rf"(?:\s+(?P<description>.*))?"
+    rf")?)?)?)?)?)?$"
+)
 
 # Label order produced by the notebook after filtering classes with min_total=1000.
 MODEL_CLASS_CODES = [
@@ -98,7 +119,9 @@ def _read_label_table() -> list[dict[str, str]]:
         row = match.iloc[0]
         acronym = str(row["Acronym Name"]).strip()
         acronym = "" if acronym.lower() == "nan" else acronym
-        rows.append({"code": code, "acronym": acronym, "name": str(row["Full Name"]).strip()})
+        rows.append(
+            {"code": code, "acronym": acronym, "name": str(row["Full Name"]).strip()}
+        )
     return rows
 
 
@@ -111,7 +134,9 @@ class ECGPredictor:
     def __init__(self, model_path: Path = MODEL_PATH):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.labels = _read_label_table()
-        self.model = MambaECGClassifier(input_channels=12, num_classes=len(self.labels)).to(self.device)
+        self.model = MambaECGClassifier(
+            input_channels=12, num_classes=len(self.labels)
+        ).to(self.device)
         state_dict = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(state_dict)
         self.model.eval()
@@ -120,13 +145,17 @@ class ECGPredictor:
         self,
         signal_path: Path,
         sampling_rate: int,
+        header_path: Path | None = None,
         thresholds: np.ndarray = MODEL_CLASS_THRESHOLDS,
     ) -> dict[str, Any]:
         raw_signal = load_ecg_file(signal_path)
+        calibration = load_header_calibration(header_path, raw_signal.shape[1])
         model_signal = prepare_model_signal(raw_signal, sampling_rate)
 
         with torch.inference_mode():
-            x = torch.from_numpy(model_signal.T[None, :, :]).to(self.device, dtype=torch.float32)
+            x = torch.from_numpy(model_signal.T[None, :, :]).to(
+                self.device, dtype=torch.float32
+            )
             logits = self.model(x)
             probabilities = torch.sigmoid(logits).squeeze(0).detach().cpu().numpy()
 
@@ -139,7 +168,9 @@ class ECGPredictor:
                 threshold=float(class_threshold),
                 detected=bool(probability >= class_threshold),
             )
-            for label, probability, class_threshold in zip(self.labels, probabilities, thresholds)
+            for label, probability, class_threshold in zip(
+                self.labels, probabilities, thresholds
+            )
         ]
         diagnoses.sort(key=lambda item: item.probability, reverse=True)
 
@@ -151,11 +182,18 @@ class ECGPredictor:
             "samples": int(raw_signal.shape[0]),
             "leads": LEAD_NAMES,
             "signal": {
-                "time": (np.arange(display_signal.shape[0]) / display_signal.attrs["fs"]).round(5).tolist(),
+                "time": (
+                    np.arange(display_signal.shape[0]) / display_signal.attrs["fs"]
+                )
+                .round(5)
+                .tolist(),
                 "values": np.asarray(display_signal).round(5).tolist(),
+                "calibration": calibration,
             },
             "diagnoses": [diagnosis.__dict__ for diagnosis in diagnoses],
-            "detected_diagnoses": [diagnosis.__dict__ for diagnosis in diagnoses if diagnosis.detected],
+            "detected_diagnoses": [
+                diagnosis.__dict__ for diagnosis in diagnoses if diagnosis.detected
+            ],
         }
 
     def predict_mat(
@@ -164,7 +202,9 @@ class ECGPredictor:
         sampling_rate: int,
         thresholds: np.ndarray = MODEL_CLASS_THRESHOLDS,
     ) -> dict[str, Any]:
-        return self.predict_file(mat_path, sampling_rate=sampling_rate, thresholds=thresholds)
+        return self.predict_file(
+            mat_path, sampling_rate=sampling_rate, thresholds=thresholds
+        )
 
 
 def load_ecg_file(signal_path: Path) -> np.ndarray:
@@ -190,7 +230,9 @@ def load_ecg_mat(mat_path: Path) -> np.ndarray:
             candidates.append((key, array.astype(np.float32)))
 
     if not candidates:
-        raise ValueError("The .mat file must contain a numeric 2D array with 12 ECG channels.")
+        raise ValueError(
+            "The .mat file must contain a numeric 2D array with 12 ECG channels."
+        )
 
     _, signal = max(candidates, key=lambda item: item[1].size)
     if signal.shape[0] == 12 and signal.shape[1] != 12:
@@ -220,13 +262,76 @@ def load_ecg_dat(dat_path: Path) -> np.ndarray:
     )
 
 
+def load_header_calibration(header_path: Path | None, channel_count: int) -> list[dict[str, Any]]:
+    default = [
+        {"gain": DEFAULT_ADC_GAIN_PER_MV, "baseline": 0.0, "unit": "mV", "source": "default"}
+        for _ in range(channel_count)
+    ]
+    if header_path is None:
+        return default
+
+    lines = [
+        line.strip()
+        for line in header_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if len(lines) < 2:
+        return default
+
+    calibration = []
+    for line in lines[1 : channel_count + 1]:
+        calibration.append(parse_wfdb_signal_line(line))
+
+    if len(calibration) < channel_count:
+        calibration.extend(default[len(calibration) :])
+    return calibration
+
+
+def parse_wfdb_signal_line(line: str) -> dict[str, Any]:
+    match = WFDB_SIGNAL_LINE_RE.fullmatch(line.strip())
+    if not match:
+        return {"gain": DEFAULT_ADC_GAIN_PER_MV, "baseline": 0.0, "unit": "mV", "source": "default"}
+
+    gain_field = match.group("gain_field") or ""
+    adc_zero = _parse_float(match.group("adc_zero")) if match.group("adc_zero") is not None else 0.0
+    gain, baseline, unit = parse_wfdb_gain_field(gain_field, adc_zero)
+    return {"gain": gain, "baseline": baseline, "unit": unit, "source": "hea"}
+
+
+def parse_wfdb_gain_field(
+    value: str, adc_zero: float | None = None
+) -> tuple[float, float, str]:
+    adc_zero = adc_zero or 0.0
+    match = WFDB_GAIN_FIELD_RE.fullmatch(value.strip())
+    if not match:
+        return DEFAULT_ADC_GAIN_PER_MV, adc_zero, "mV"
+
+    gain_group = match.group("gain")
+    gain = float(gain_group) if gain_group else DEFAULT_ADC_GAIN_PER_MV
+    if gain == 0:
+        gain = DEFAULT_ADC_GAIN_PER_MV
+    baseline_group = match.group("baseline")
+    baseline = float(baseline_group) if baseline_group is not None else adc_zero
+    unit = match.group("unit") or "mV"
+    return gain, baseline, unit
+
+
+def _parse_float(value: str) -> float | None:
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
 def prepare_model_signal(signal: np.ndarray, sampling_rate: int) -> np.ndarray:
     if sampling_rate <= 0:
         raise ValueError("Sampling rate must be positive.")
 
     if sampling_rate != TARGET_FS:
         gcd = np.gcd(int(TARGET_FS), int(sampling_rate))
-        signal = resample_poly(signal, TARGET_FS // gcd, sampling_rate // gcd, axis=0).astype(np.float32)
+        signal = resample_poly(
+            signal, TARGET_FS // gcd, sampling_rate // gcd, axis=0
+        ).astype(np.float32)
 
     signal = fix_length(signal, TARGET_LENGTH)
     mean = signal.mean(axis=0, keepdims=True)
@@ -247,7 +352,9 @@ class DisplaySignal(np.ndarray):
     attrs: dict[str, Any]
 
 
-def downsample_for_display(signal: np.ndarray, sampling_rate: int, max_points: int = 3000) -> DisplaySignal:
+def downsample_for_display(
+    signal: np.ndarray, sampling_rate: int, max_points: int = 3000
+) -> DisplaySignal:
     step = max(1, int(np.ceil(signal.shape[0] / max_points)))
     display = signal[::step].astype(np.float32).view(DisplaySignal)
     display.attrs = {"fs": sampling_rate / step}

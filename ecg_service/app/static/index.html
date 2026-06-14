@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ECG Diagnosis Service</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260613-header-rate" />
   <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 </head>
 <body>
@@ -20,30 +20,14 @@
           <span>Signal file (.mat or .dat)</span>
           <input id="file" name="file" type="file" accept=".mat,.dat" required />
         </label>
-        <fieldset class="field rate-mode">
-          <legend>Sampling rate source</legend>
-          <label class="radio-option">
-            <input type="radio" name="rate-mode" value="predefined" checked />
-            <span>Use predefined rate</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="rate-mode" value="custom" />
-            <span>Use my own rate</span>
-          </label>
-        </fieldset>
         <label class="field">
-          <span>Sampling rate, Hz</span>
-          <select id="sampling-rate" name="sampling_rate">
-            <option value="100">100</option>
-            <option value="250">250</option>
-            <option value="300">300</option>
-            <option value="500" selected>500</option>
-            <option value="1000">1000</option>
-          </select>
+          <span>Header file (.hea, optional)</span>
+          <input id="header-file" name="header_file" type="file" accept=".hea" />
         </label>
+        <button id="remove-header" class="secondary-button hidden" type="button">Remove header</button>
         <label class="field custom-rate">
           <span>Custom Hz</span>
-          <input id="custom-rate" type="number" min="1" step="1" placeholder="Enter Hz" disabled />
+          <input id="custom-rate" type="number" min="1" step="1" value="500" required />
         </label>
         <button id="submit" type="submit">Analyze ECG</button>
         <p id="status" class="status">Waiting for upload.</p>
@@ -69,8 +53,19 @@
       <article class="card plot-card">
         <div class="card-header">
           <h2>12-channel signal</h2>
-          <p>Signals are downsampled for browser display only.</p>
+          <p>The waveform stays fixed; only y-axis labels and hover values change.</p>
         </div>
+        <fieldset class="display-mode plot-display-mode hidden">
+          <legend>Y-axis display</legend>
+          <label class="radio-option">
+            <input type="radio" name="display-mode" value="mv" checked />
+            <span>mV</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="display-mode" value="mm-10" />
+            <span>mm, 10 mm/mV</span>
+          </label>
+        </fieldset>
         <div id="plot" class="plot empty">Upload a file to show ECG leads.</div>
       </article>
 
@@ -84,6 +79,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20260613-header-rate"></script>
 </body>
 </html>

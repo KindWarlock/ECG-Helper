@@ -99,14 +99,34 @@ input:disabled, select:disabled {
   background: #f3f6f9;
 }
 
-.rate-mode {
+.rate-mode, .display-mode {
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.rate-mode legend {
+.rate-mode legend, .display-mode legend {
   margin-bottom: 8px;
+}
+
+.plot-display-mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.plot-display-mode legend {
+  display: inline-flex;
+  align-items: center;
+  float: none;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
 }
 
 .radio-option {
@@ -119,6 +139,7 @@ input:disabled, select:disabled {
   background: white;
   color: var(--text);
   font-weight: 750;
+  flex: 1 1;
 }
 
 .radio-option input {
@@ -139,6 +160,13 @@ button {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.secondary-button {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--primary-dark);
+  box-shadow: none;
 }
 
 .status {
@@ -212,6 +240,24 @@ button:disabled {
 .plot {
   width: 100%;
   height: 1040px;
+}
+
+.segment-length-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border: 1px solid #14b8a6;
+  border-radius: 999px;
+  background: rgba(240, 253, 250, 0.96);
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.segment-length-label:not(.hidden) {
+  display: inline-flex;
 }
 
 .empty {

@@ -27,7 +27,7 @@ From the repository root:
 
 ```bash
 source .venv/bin/activate
-uvicorn ecg_service.app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Open <http://localhost:8000>.
